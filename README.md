@@ -57,7 +57,7 @@
    -e MYSQL_ROOT_PASSWORD=MyRootPwd \
    -e MYSQL_DATABASE=cafequyettranvu \
    -e MYSQL_USER=quyettranvu \
-   -e MYSQL_PASSWORD=13112000Nhatrang \
+   -e MYSQL_PASSWORD=********** \
    -p 3306:3306 -d mysql:8
 
 
@@ -65,9 +65,9 @@
    docker run -d \
    --name redis-cafequyet \
    -p 6379:6379 \
-   -e REDIS_PASSWORD=13112000Nhatrang \
+   -e REDIS_PASSWORD=********** \
    redis:7.2 \
-   redis-server --requirepass 13112000Nhatrang
+   redis-server --requirepass **********
 
 3. Kafka: (sử dụng Docker và Zookeeper)
    docker run -d --name zookeeper -p 2181:2181 confluentinc/cp-zookeeper
