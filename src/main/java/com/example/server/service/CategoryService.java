@@ -8,9 +8,11 @@ import org.springframework.http.ResponseEntity;
 import com.example.server.POJO.Category;
 
 public interface CategoryService {
+
     ResponseEntity<String> addNewCategory(Map<String, String> requestMap);
 
-    ResponseEntity<List<Category>> getAllCategory(String filterValue);
+    List<Category> getAllCategory(String filterValue);
 
     ResponseEntity<String> updateCategory(Map<String, String> requestMap);
+
 }

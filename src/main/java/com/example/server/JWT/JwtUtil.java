@@ -15,7 +15,7 @@ import java.util.function.Function;
 public class JwtUtil {
 
     /* Process for creating and signing secret key */
-    private String secret = "quyettranvu";
+    private final String secret = "quyettranvu";
 
     public String extractUsername(String token) {
         return extractClaims(token, Claims::getSubject);
@@ -60,8 +60,7 @@ public class JwtUtil {
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 days
-                .signWith(SignatureAlgorithm.HS256, secret).compact(); // compact into string representation of JWT
-                                                                       // token
+                .signWith(SignatureAlgorithm.HS256, secret).compact(); // compact into string representation of JWT token
     }
 
 }

@@ -1,29 +1,34 @@
 package com.example.server.POJO;
 
+import java.io.Serial;
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.Table;
 
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
 import lombok.Data;
 
-@NamedQuery(name = "Category.getAllCategory", query = "select c from Category c where c.id in (select p.category from Product p where p.status='true')")
+@EqualsAndHashCode(callSuper = true)
+@NamedQuery(name = "Category.getAllCategory", query = "select c from Category c where c.id in (select p.category.id from Product p where p.status='true')")
 
 @Data // replace for constructor, settter and getter
 @Entity
 @DynamicUpdate
 @DynamicInsert
 @Table(name = "category")
-public class Category implements Serializable {
+public class Category extends BaseInfo implements Serializable {
+
     // specify the serialized version of the class within tranmission
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -33,4 +38,5 @@ public class Category implements Serializable {
 
     @Column(name = "name")
     private String name;
+    
 }

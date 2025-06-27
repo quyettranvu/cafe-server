@@ -1,9 +1,14 @@
 package com.example.server.wrapper;
 
+import com.example.server.POJO.BaseInfo;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class ProductWrapper {
+@NoArgsConstructor
+public class ProductWrapper extends BaseInfo {
 
     Integer id;
 
@@ -18,10 +23,6 @@ public class ProductWrapper {
     Integer categoryId;
 
     String categoryName;
-
-    public ProductWrapper() {
-
-    }
 
     public ProductWrapper(Integer id, String name, String description, Integer price, String status, Integer categoryId,
             String categoryName) {

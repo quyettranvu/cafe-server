@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,7 +20,7 @@ import com.example.server.JWT.CustomerUsersDetailsService;
 import com.example.server.JWT.JwtFilter;
 import com.example.server.JWT.JwtUtil;
 import com.example.server.POJO.User;
-import com.example.server.constents.CafeConstants;
+import com.example.server.constants.ApiConstants;
 import com.example.server.dao.UserDao;
 import com.example.server.service.UserService;
 import com.example.server.utils.CafeUtils;
@@ -65,22 +66,19 @@ public class UserServiceImpl implements UserService {
                     return CafeUtils.getResponseEntity("Email already exists", HttpStatus.BAD_REQUEST);
                 }
             } else {
-                return CafeUtils.getResponseEntity(CafeConstants.INVALID_DATA, HttpStatus.BAD_REQUEST);
+                return CafeUtils.getResponseEntity(ApiConstants.INVALID_DATA, HttpStatus.BAD_REQUEST);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return CafeUtils.getResponseEntity(CafeConstants.INVALID_DATA, HttpStatus.BAD_REQUEST);
+        return CafeUtils.getResponseEntity(ApiConstants.INVALID_DATA, HttpStatus.BAD_REQUEST);
     }
 
-    // vaidate requestMap
+    // validate requestMap
     private boolean validateSignUpMap(Map<String, String> requestMap) {
-        if (requestMap.containsKey("name") && requestMap.containsKey("contactNumber")
-                && requestMap.containsKey("email") && requestMap.containsKey("password")) {
-            return true;
-        }
-        return false;
+        return requestMap.containsKey("name") && requestMap.containsKey("contactNumber")
+                && requestMap.containsKey("email") && requestMap.containsKey("password");
     }
 
     private User getUserFromMap(Map<String, String> requestMap) {
@@ -104,12 +102,12 @@ public class UserServiceImpl implements UserService {
 
             if (auth.isAuthenticated()) {
                 if (customerUsersDetailsService.getUserDetail().getStatus().equalsIgnoreCase("true")) {
-                    return new ResponseEntity<String>("{\"token\":\"" +
+                    return new ResponseEntity<>("{\"token\":\"" +
                             jwtUtil.generateToken(customerUsersDetailsService.getUserDetail().getEmail(),
                                     customerUsersDetailsService.getUserDetail().getRole())
                             + "\"}", HttpStatus.OK);
                 } else {
-                    return new ResponseEntity<String>("{\"message\":\"" + "Wait for admin approval." + "\"}",
+                    return new ResponseEntity<>("{\"message\":\"" + "Wait for admin approval." + "\"}",
                             HttpStatus.BAD_REQUEST);
                 }
             }
@@ -118,17 +116,18 @@ public class UserServiceImpl implements UserService {
             log.error("{}", e);
         }
 
-        return new ResponseEntity<String>("{\"message\":\"" + "Bad Credentials." + "\"}", HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>("{\"message\":\"" + "Bad Credentials." + "\"}", HttpStatus.BAD_REQUEST);
     }
 
     @Override
+    @Cacheable(value = "getUserList", key = "'getUsers'")
     public ResponseEntity<List<UserWrapper>> getAllUser() {
         try {
             if (jwtFilter.isAdmin()) {
-                return new ResponseEntity<List<UserWrapper>>(userDao.getAllUser(), HttpStatus.OK);
+                return new ResponseEntity<>(userDao.getAllUser(), HttpStatus.OK);
             } else {
                 // if user then no access to all users's informations
-                return new ResponseEntity<List<UserWrapper>>(new ArrayList<>(), HttpStatus.UNAUTHORIZED);
+                return new ResponseEntity<>(new ArrayList<>(), HttpStatus.UNAUTHORIZED);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -142,7 +141,7 @@ public class UserServiceImpl implements UserService {
         try {
             if (jwtFilter.isAdmin()) {
                 Optional<User> optional = userDao.findById(Integer.parseInt(requestMap.get("id")));
-                if (!optional.isEmpty()) {
+                if (optional.isPresent()) {
                     userDao.updateStatus(requestMap.get("status"), Integer.parseInt(requestMap.get("id")));
                     sendMailToAllAdmin(requestMap.get("status"), optional.get().getEmail(), userDao.getAllAdmin());
                     return CafeUtils.getResponseEntity("User Status updated successfully", HttpStatus.OK);
@@ -151,13 +150,13 @@ public class UserServiceImpl implements UserService {
                 }
             } else {
                 // if user not available to update info of users
-                return CafeUtils.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
+                return CafeUtils.getResponseEntity(ApiConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return CafeUtils.getResponseEntity(ApiConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private void sendMailToAllAdmin(String status, String user, List<String> allAdmin) {
@@ -181,7 +180,7 @@ public class UserServiceImpl implements UserService {
     public ResponseEntity<String> changePassword(Map<String, String> requestMap) {
         try {
             User userObj = userDao.findByEmail(jwtFilter.getCurrentUser());
-            if (!userObj.equals(null)) {
+            if (userObj != null) {
                 // if correct password
                 if (userObj.getPassword().equals(requestMap.get("oldPassword"))) {
                     userObj.setPassword(requestMap.get("newPassword"));
@@ -190,11 +189,11 @@ public class UserServiceImpl implements UserService {
                 }
                 return CafeUtils.getResponseEntity("Incorrect old password", HttpStatus.BAD_REQUEST);
             }
-            return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+            return CafeUtils.getResponseEntity(ApiConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return CafeUtils.getResponseEntity(ApiConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Override
@@ -209,6 +208,7 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return CafeUtils.getResponseEntity(ApiConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+    
 }

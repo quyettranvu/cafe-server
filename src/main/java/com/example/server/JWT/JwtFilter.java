@@ -2,6 +2,8 @@ package com.example.server.JWT;
 
 import java.io.IOException;
 
+import com.example.server.constants.SystemConstants;
+import jakarta.servlet.Filter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,13 +14,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import io.jsonwebtoken.Claims;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Component
-public class JwtFilter extends OncePerRequestFilter {
+public class JwtFilter extends OncePerRequestFilter implements Filter {
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -67,11 +69,11 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     public boolean isAdmin() {
-        return "admin".equalsIgnoreCase((String) claims.get("role"));
+        return SystemConstants.ADMIN.equalsIgnoreCase((String) claims.get("role"));
     }
 
     public boolean isUser() {
-        return "user".equalsIgnoreCase((String) claims.get("role"));
+        return SystemConstants.USER.equalsIgnoreCase((String) claims.get("role"));
     }
 
     public String getCurrentUser() {

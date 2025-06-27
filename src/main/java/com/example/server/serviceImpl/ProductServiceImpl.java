@@ -5,7 +5,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.hibernate.Session;
+import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -13,11 +18,14 @@ import org.springframework.stereotype.Service;
 import com.example.server.JWT.JwtFilter;
 import com.example.server.POJO.Category;
 import com.example.server.POJO.Product;
-import com.example.server.constents.CafeConstants;
+import com.example.server.constants.ApiConstants;
 import com.example.server.dao.ProductDao;
 import com.example.server.service.ProductService;
 import com.example.server.utils.CafeUtils;
 import com.example.server.wrapper.ProductWrapper;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -28,7 +36,11 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     ProductDao productDao;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Override
+    @CacheEvict(value = "dashboardCounts", key = "'getCount'")
     public ResponseEntity<String> addNewProduct(Map<String, String> requestMap) {
         try {
             if (jwtFilter.isAdmin()) {
@@ -36,14 +48,14 @@ public class ProductServiceImpl implements ProductService {
                     productDao.save(getProductFromMap(requestMap, false));
                     return CafeUtils.getResponseEntity("Product added successfully", HttpStatus.OK);
                 }
-                return CafeUtils.getResponseEntity(CafeConstants.INVALID_DATA, HttpStatus.BAD_REQUEST);
+                return CafeUtils.getResponseEntity(ApiConstants.INVALID_DATA, HttpStatus.BAD_REQUEST);
             } else {
-                return CafeUtils.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
+                return CafeUtils.getResponseEntity(ApiConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return CafeUtils.getResponseEntity(ApiConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private Product getProductFromMap(Map<String, String> requestMap, boolean isUpdate) {
@@ -67,30 +79,41 @@ public class ProductServiceImpl implements ProductService {
         if (requestMap.containsKey("name")) {
             if (requestMap.containsKey("id") && validateId) {
                 return true;
-            } else if (!validateId) {
-                return true;
-            }
+            } else return !validateId;
         }
         return false;
     }
 
     @Override
-    public ResponseEntity<List<ProductWrapper>> getAllProduct() {
+    @Cacheable(value = "getProductList", key = "'getProducts'")
+    public List<ProductWrapper> getAllProduct() {
         try {
-            return new ResponseEntity<List<ProductWrapper>>(productDao.getAllProduct(), HttpStatus.OK);
+            Session session = entityManager.unwrap(Session.class);
+
+            String hsql = "SELECT new com.example.server.wrapper.ProductWrapper(" +
+                    "p.id, p.name, p.description, p.price, p.status, p.category.id, c.name) " +
+                    "FROM Product p " +
+                    "JOIN Category c ON p.category.id = c.id";
+
+            Query<ProductWrapper> query = session.createQuery(hsql, ProductWrapper.class);
+            return query.getResultList();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return new ResponseEntity<List<ProductWrapper>>(new ArrayList<>(), HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ArrayList<>();
     }
 
     @Override
+    @Caching(evict = {
+        @CacheEvict(value = "getProductList", key = "'getProducts'"),
+        @CacheEvict(value = "dashboardCounts", key = "'getCount'")
+    })
     public ResponseEntity<String> updateProduct(Map<String, String> requestMap) {
         try {
             if (jwtFilter.isAdmin()) {
                 if (validateProductMap(requestMap, true)) {
                     Optional<Product> optional = productDao.findById(Integer.parseInt(requestMap.get("id")));
-                    if (!optional.isEmpty()) {
+                    if (optional.isPresent()) {
                         Product product = getProductFromMap(requestMap, true);
                         product.setStatus(optional.get().getStatus());
                         productDao.save(product);
@@ -99,35 +122,39 @@ public class ProductServiceImpl implements ProductService {
                         return CafeUtils.getResponseEntity("Product id does not exist", HttpStatus.OK);
                     }
                 } else {
-                    return CafeUtils.getResponseEntity(CafeConstants.INVALID_DATA, HttpStatus.BAD_REQUEST);
+                    return CafeUtils.getResponseEntity(ApiConstants.INVALID_DATA, HttpStatus.BAD_REQUEST);
                 }
             } else {
-                return CafeUtils.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
+                return CafeUtils.getResponseEntity(ApiConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return CafeUtils.getResponseEntity(ApiConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "getProductList", key = "'getProducts'"),
+            @CacheEvict(value = "dashboardCounts", key = "'getCount'")
+    })
     public ResponseEntity<String> deleteProduct(Integer id) {
         try {
             if (jwtFilter.isAdmin()) {
                 Optional<Product> optional = productDao.findById(id);
-                if (!optional.isEmpty()) {
+                if (optional.isPresent()) {
                     productDao.deleteById(id);
                     return CafeUtils.getResponseEntity("Product deleted successfully", HttpStatus.OK);
                 }
                 return CafeUtils.getResponseEntity("Product id does not exist", HttpStatus.OK);
             } else {
-                return CafeUtils.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
+                return CafeUtils.getResponseEntity(ApiConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return CafeUtils.getResponseEntity(ApiConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Override
@@ -135,19 +162,19 @@ public class ProductServiceImpl implements ProductService {
         try {
             if (jwtFilter.isAdmin()) {
                 Optional<Product> optional = productDao.findById(Integer.parseInt(requestMap.get("id")));
-                if (!optional.isEmpty()) {
+                if (optional.isPresent()) {
                     productDao.updateProductStatus(requestMap.get("status"), Integer.parseInt(requestMap.get("id")));
                     return CafeUtils.getResponseEntity("Product status updated successfully", HttpStatus.OK);
                 } else {
                     return CafeUtils.getResponseEntity("Product id does not exist", HttpStatus.OK);
                 }
             } else {
-                return CafeUtils.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
+                return CafeUtils.getResponseEntity(ApiConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return CafeUtils.getResponseEntity(ApiConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
 
     }
 
@@ -170,4 +197,5 @@ public class ProductServiceImpl implements ProductService {
         }
         return new ResponseEntity<>(new ProductWrapper(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
 }

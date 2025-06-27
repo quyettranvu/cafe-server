@@ -10,18 +10,24 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import com.example.server.config.kafka.producers.OrderEventProducer;
+import com.example.server.dto.CustomerOrder;
 import com.itextpdf.text.Element;
 
 import org.apache.pdfbox.io.IOUtils;
 import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import com.example.server.JWT.JwtFilter;
 import com.example.server.POJO.Bill;
-import com.example.server.constents.CafeConstants;
+import com.example.server.constants.ApiConstants;
 import com.example.server.dao.BillDao;
 import com.example.server.service.BillService;
 import com.example.server.utils.CafeUtils;
@@ -49,6 +55,14 @@ public class BillServiceImpl implements BillService {
     @Autowired
     BillDao billDao;
 
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final OrderEventProducer orderEventProducer;
+
+    public BillServiceImpl(KafkaTemplate<String, Object> kafkaTemplate, OrderEventProducer orderEventProducer) {
+        this.kafkaTemplate = kafkaTemplate;
+        this.orderEventProducer = orderEventProducer;
+    }
+
     @Override
     public ResponseEntity<String> generateReport(Map<String, Object> requestMap) {
         log.info("Inside generateReport");
@@ -73,7 +87,7 @@ public class BillServiceImpl implements BillService {
                 // Generate and save bill as pdf, shapes and outside objects
                 Document document = new Document();
                 PdfWriter.getInstance(document,
-                        new FileOutputStream(CafeConstants.STORE_LOCATION + "\\" + fileName + ".pdf"));
+                        new FileOutputStream(ApiConstants.STORE_LOCATION + "\\" + fileName + ".pdf"));
                 document.open();
                 setRectangleInPDf(document);
 
@@ -102,13 +116,12 @@ public class BillServiceImpl implements BillService {
                 document.add(footer);
                 document.close();
                 return CafeUtils.getResponseEntity("{\"uuid\":\"" + fileName + "\"}", HttpStatus.OK);
-
             }
             return CafeUtils.getResponseEntity("Required data not found", HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return CafeUtils.getResponseEntity(ApiConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private void addRows(PdfPTable table, Map<String, Object> data) {
@@ -163,6 +176,11 @@ public class BillServiceImpl implements BillService {
         document.add(rect);
     }
 
+
+    @Caching(evict = {
+        @CacheEvict(value = "dashboardCounts", key = "'getCount'"),
+        @CacheEvict(value = "getBillList", key = "'getBills'")
+    })
     private void insertBill(Map<String, Object> requestMap) {
         try {
             Bill bill = new Bill();
@@ -190,14 +208,15 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
-    public ResponseEntity<List<Bill>> getBills() {
+    @Cacheable(value="getBillList", key="'getBills'")
+    public List<Bill> getBills() {
         List<Bill> list = new ArrayList<>();
         if (jwtFilter.isAdmin()) {
             list = billDao.getAllBills();
         } else {
             list = billDao.getBillByUserName(jwtFilter.getCurrentUser());
         }
-        return new ResponseEntity<List<Bill>>(list, HttpStatus.OK);
+        return list;
     }
 
     @Override
@@ -206,20 +225,23 @@ public class BillServiceImpl implements BillService {
         try {
             byte[] byteArray = new byte[0];
             // in request body need to contain value for uuid
-            if (!requestMap.containsKey("uuid") && validateRequestMap(requestMap)) {
+            if (!requestMap.containsKey("uuid")) {
                 return new ResponseEntity<>(byteArray, HttpStatus.BAD_REQUEST);
             }
-            String filePath = CafeConstants.STORE_LOCATION + "\\" + (String) requestMap.get("uuid") + ".pdf";
-            if (CafeUtils.isFileExist(filePath)) {
-                byteArray = getByteArray(filePath);
-                return new ResponseEntity<>(byteArray, HttpStatus.OK);
-            } else {
+            String filePath = ApiConstants.STORE_LOCATION + "\\" + (String) requestMap.get("uuid") + ".pdf";
+            if (!CafeUtils.isFileExist(filePath)) {
                 // if file not existed generate new uuid and new PDF file
                 requestMap.put("isGenerate", false);
-                generateReport(requestMap);
-                byteArray = getByteArray(filePath);
-                return new ResponseEntity<>(byteArray, HttpStatus.OK);
+                generateReport(requestMap); // print bill for customer
+
+                // notify new order for kitchen
+                Map<String, String> data = (Map<String, String>) requestMap.get("data");
+                CustomerOrder customerOrder = new CustomerOrder((Integer) requestMap.get("uuid"), data.get("name"), data.get("contactNumber"),
+                        data.get("paymentMethod"), Integer.parseInt(data.get("totalAmount")), data.get("productDetails"));
+                orderEventProducer.sendOrderEvent("orders", customerOrder);
             }
+            byteArray = getByteArray(filePath);
+            return new ResponseEntity<>(byteArray, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -236,10 +258,14 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
+    @Caching(evict = {
+        @CacheEvict(value = "dashboardCounts", key = "getCount"),
+        @CacheEvict(value = "getBillList", key = "'getBills'")
+    })
     public ResponseEntity<String> deleteBill(Integer id) {
         try {
             Optional<Bill> optional = billDao.findById(id);
-            if (!optional.isEmpty()) {
+            if (optional.isPresent()) {
                 Bill bill = optional.get();
                 // admin can delete any bills but users can delete only their bills
                 if (jwtFilter.isAdmin()) {
@@ -258,7 +284,7 @@ public class BillServiceImpl implements BillService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return CafeUtils.getResponseEntity(ApiConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
 }

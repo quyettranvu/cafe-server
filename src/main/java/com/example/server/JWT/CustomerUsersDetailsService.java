@@ -3,6 +3,7 @@ package com.example.server.JWT;
 import java.util.ArrayList;
 import java.util.Objects;
 
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,8 +22,12 @@ public class CustomerUsersDetailsService implements UserDetailsService {
     @Autowired
     UserDao userDao;
 
+    /* password not exposed */
+    // com.example.server.POJO.User user = userDetail;
+    // user.setPassword(null);
     // create a bean of model to encapsulate the user's details into an object that
     // can be easily passed around in app
+    @Getter
     private com.example.server.POJO.User userDetail;
 
     @Override
@@ -35,14 +40,6 @@ public class CustomerUsersDetailsService implements UserDetailsService {
             log.info("User not found");
             throw new UsernameNotFoundException("User not found");
         }
-    }
-
-    public com.example.server.POJO.User getUserDetail() {
-        /* password not exposed */
-        // com.example.server.POJO.User user = userDetail;
-        // user.setPassword(null);
-
-        return userDetail;
     }
 
 }

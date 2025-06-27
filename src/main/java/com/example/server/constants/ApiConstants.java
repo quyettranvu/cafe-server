@@ -1,6 +1,6 @@
-package com.example.server.constents;
+package com.example.server.constants;
 
-public class CafeConstants {
+public class ApiConstants {
 
     public static final String SOMETHING_WENT_WRONG = "Something went wrong";
     public static final String INVALID_DATA = "Invalid data";

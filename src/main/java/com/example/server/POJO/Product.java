@@ -1,23 +1,26 @@
 package com.example.server.POJO;
 
+import java.io.Serial;
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.Table;
 
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
 import lombok.Data;
 
+@EqualsAndHashCode(callSuper = true)
 @NamedQuery(name = "Product.getAllProduct", query = "select new com.example.server.wrapper.ProductWrapper(p.id,p.name,p.description,p.price,p.status,p.category.id,p.category.name) from Product p")
 
 @NamedQuery(name = "Product.updateProductStatus", query = "update Product p set p.status=:status where p.id=:id")
@@ -31,9 +34,10 @@ import lombok.Data;
 @DynamicInsert
 @DynamicUpdate
 @Table(name = "product")
-public class Product implements Serializable {
+public class Product extends BaseInfo implements Serializable {
 
-    public static final long serialVersionUID = 123456L;
+    @Serial
+    private static final long serialVersionUID = 123456L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,4 +60,5 @@ public class Product implements Serializable {
 
     @Column(name = "status")
     private String status;
+    
 }

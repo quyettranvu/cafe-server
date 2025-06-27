@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.NoArgsConstructor;
 import org.assertj.core.util.Strings;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -17,14 +18,11 @@ import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@NoArgsConstructor
 public class CafeUtils {
 
-    private CafeUtils() {
-
-    }
-
     public static ResponseEntity<String> getResponseEntity(String responseMessage, HttpStatus httpStatus) {
-        return new ResponseEntity<String>("{\"message\":\"" + responseMessage + "\"}", httpStatus);
+        return new ResponseEntity<>("{\"message\":\"" + responseMessage + "\"}", httpStatus);
     }
 
     public static String getUUID() {
@@ -34,8 +32,7 @@ public class CafeUtils {
     }
 
     public static JSONArray getJsonArrayFromString(String data) throws JSONException {
-        JSONArray jsonArray = new JSONArray(data);
-        return jsonArray;
+        return new JSONArray(data);
     }
 
     // parse a JSON to Java class with GSON library(here is type Map<String,Object>)
@@ -50,10 +47,11 @@ public class CafeUtils {
         log.info("Inside isFileExist {}", path);
         try {
             File file = new File(path);
-            return (file != null && file.exists()) ? Boolean.TRUE : Boolean.FALSE;
+            return file.exists() ? Boolean.TRUE : Boolean.FALSE;
         } catch (Exception e) {
             e.printStackTrace();
         }
         return false;
     }
+
 }

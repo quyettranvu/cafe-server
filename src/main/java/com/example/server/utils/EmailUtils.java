@@ -2,15 +2,15 @@ package com.example.server.utils;
 
 import java.util.List;
 
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 // import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
 @Service
 public class EmailUtils {
@@ -27,7 +27,7 @@ public class EmailUtils {
         message.setTo(to);
         message.setSubject(subject);
         message.setText(text);
-        if (list != null && list.size() > 0)
+        if (list != null && !list.isEmpty())
             message.setCc(getCcArray(list));
 
         emailSender.send(message);
