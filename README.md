@@ -106,6 +106,29 @@
    - Một giao diện đại diện cho một tác vụ xử lý riêng lẻ, không chia theo chunk (không chia theo chunk để process)
    - Thường dùng để xử lý MỘT lần duy nhất
 
-  - Thuật ngữ (Glossary): https://docs.spring.io/spring-batch/reference/glossary.html
+5. Spring Data Redis
+   Về thuật ngữ chung: trong source đang xem consumer là subscriber theo docs của Spring Data Redis
+   
+   Về Cache Manager: RedisCacheManager chỉ hỗ trợ cache-level locking, còn nếu muốn custom per-key locking phải viết một cơ chế lấy dữ liệu qua key này (bỏ qua Cacheable)
+
+   Về Object Mapping: Trong source đã sử dụng hai cách:
+  - Convert to simple value using e. g. a String JSON representation.
+  - Serialize the value with a suitable RedisSerializer.
+  - Convert the value into a Map suitable for serialization using a HashMapper. (tham khảo thêm ở: https://docs.spring.io/spring-data/redis/reference/redis/redis-streams.html)
+
+   Các nội dung có thể triển khai thêm:
+   - Keyspaces: custom prefix cho key khi lưu bằng Redis (sử dụng @RedisHash)
+   - Secondary Index: sử dụng chỉ số phụ để truy vấn nhanh hơn (sử dụng @Indexed, @GeoIndexed)
+   - Time to live: quy định thời gian tồn tại cho objects lưu trong Redis, trong source config chung ở Redis Cache Manager. Có thể custom cụ thể ở một lớp trong @RedisHash, @TimeToLive(cho hoặc thuộc tính hoặc phương thức trong cùng 1 class), thông qua Keyspace settings.
+   - Redis sẽ không hỗ trợ native sorting trực tiếp từ Redis, nếu cần Truy vấn tất cả các bản ghi phù hợp trước, sau đó sort trong bộ nhớ Java (bằng Comparator) trước khi gọi logic xử lý.
+   - Query theo filter, matchers: https://docs.spring.io/spring-data/redis/reference/redis/redis-repositories/query-by-example.html
+   - Class-based Projections (DTOs): hướng thiết kế truy vấn đối tượng trả về linh hoạt
+   - phát sinh các sự kiện nghiệp vụ (domain events) một cách rõ ràng và tự động khi có thay đổi dữ liệu, mà không cần viết thủ công ở Service hay Listener. (lưu ý là thao tác với entity hoặc save hoặc delete thôi), sử dụng @DomainEvents (chẳng hạn để phát đi thông báo được publish sau khi đã lưu thành công). Ngoài ra có @AfterDomainEventPublication
+   Về Redis Cluster:
+   - cơ chế cho phép phân tán dữ liệu Redis trên nhiều node (máy chủ). Mỗi cluster sẽ có các master nodes quản và mỗi có >=1 replicas
+   - khi cần mở rộng chỉ cần thêm node, Redis cluster sẽ tự cân bằng tải lại
+
+   Các Keywords/Kiểu Collections Types khi làm việc với Spring Data Redis: https://docs.spring.io/spring-data/redis/reference/repositories/query-keywords-reference.html, https://docs.spring.io/spring-data/redis/reference/repositories/query-return-types-reference.html
+   - Thuật ngữ (Glossary): https://docs.spring.io/spring-batch/reference/glossary.html
 
 

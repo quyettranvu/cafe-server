@@ -14,10 +14,10 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 /**
- * Redis Pub/Sub is suitable for sceneries  real-time updates to connected WebSocket clients.
+ * Redis Pub/Sub is suitable for scenery real-time updates to connected WebSocket clients.
  */
 @Service
-public class RedisSubscriber {
+public class RedisConsumer {
 
     @Value("${spring.redis.channel-name}")
     private String channelName;
@@ -25,7 +25,7 @@ public class RedisSubscriber {
     private final SimpMessagingTemplate websocketTemplate; //STOMP
 
     @Autowired
-    public RedisSubscriber(SimpMessagingTemplate websocketTemplate) {
+    public RedisConsumer(SimpMessagingTemplate websocketTemplate) {
         this.websocketTemplate = websocketTemplate;
     }
 
@@ -38,7 +38,7 @@ public class RedisSubscriber {
     }
 
     /**
-     * utility function to deserialize message (if required)
+     * utility function to deserialize a message (if required)
      */
     private BroadCastEvent deserializeMessage(String message) {
         ObjectMapper objectMapper = new ObjectMapper();

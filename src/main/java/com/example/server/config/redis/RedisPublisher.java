@@ -22,13 +22,13 @@ public class RedisPublisher {
     }
 
     /**
-     * Publish message to channel, then it will be sent to all Websocket Clients
-     * @param event: custom type of carry data object for communication between Redis Pub/Sub and Websocket
+     * Publish a message to channel, then it will be sent to all Websocket Clients
+     * @param event: custom type of carry a data object for communication between Redis Pub/Sub and Websocket
      */
     public void publish(BroadCastEvent event) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            String message = objectMapper.writeValueAsString(event);
+            String message = objectMapper.writeValueAsString(event); // converted to simple values using String JSON operations
             redisTemplate.convertAndSend(channelName, message);
         } catch (Exception e) {
             throw new RuntimeException(SystemConstants.PUBLISH_MESSAGE_FAILED, e);

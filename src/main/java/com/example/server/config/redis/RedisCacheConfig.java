@@ -15,13 +15,13 @@ import java.time.Duration;
 @Configuration
 public class RedisCacheConfig {
 
-    // Time-to-Live default cache eviction
     @Bean
     public CacheManager cacheManager(JedisConnectionFactory jedisConnectionFactory) {
         /* Types Mapper*/
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
+        // Cache configurations(behaviour) for Redis Cache Manager managing Redis Client
         RedisCacheConfiguration cacheConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10))
                 .disableCachingNullValues()

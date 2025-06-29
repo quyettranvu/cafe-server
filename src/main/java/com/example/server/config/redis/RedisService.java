@@ -69,12 +69,12 @@ public class RedisService {
         listOperations.leftPush(key, value);
     }
 
-    private List getList(String key) {
+    private List<?> getList(String key) {
         ListOperations<String, String> listOperations = redisTemplate.opsForList();
         return listOperations.range(key,0, -1);
     }
 
-    // Distributed lock -> prevent deadlock
+    // Distributed lock -> prevent deadlock (when using cache per-key lock)
     private boolean acquireLock(String lockKey, String requestId, int expireTime) {
         return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(lockKey, requestId, expireTime, TimeUnit.SECONDS));
     }

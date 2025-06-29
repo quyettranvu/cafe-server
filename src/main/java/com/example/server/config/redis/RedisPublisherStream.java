@@ -23,6 +23,7 @@ public class RedisPublisherStream {
     }
 
     public void publish(String streamName, StreamDataEvent event) {
+        // K: Redis stream key, HK: field(hash key) of message, HV: value(hash value) of message
         StreamOperations<String, Object, Object> streamOps = redisTemplate.opsForStream();
 
         Map<String, String> payload = new HashMap<>();

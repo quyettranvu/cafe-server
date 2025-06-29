@@ -31,7 +31,7 @@ public class RedisConfig {
     private String redisPassword;
 
     /** ******************
-     * Jedis Configuration
+     * Jedis Configuration: configs of jedis connection factory defined for String Redis Template
      *  ******************
      */
     // Jedis Factory
@@ -49,12 +49,12 @@ public class RedisConfig {
     }
 
     /**
-     * Template to interact with Redis client: template <String, String>
+     * String Redis Template to interact with a Redis client: template <String, String> but with object serializer
      */
     @Bean
     public RedisTemplate<String, String> generateRedisTemplate() {
         RedisTemplate<String, String> template = new RedisTemplate<>();
-        JedisConnectionFactory factory = jedisConnectionFactory();
+        JedisConnectionFactory factory = jedisConnectionFactory(); // using Jedis Connection Factory
         if (factory == null) {
             throw new IllegalStateException("JedisConnectionFactory is null");
         }
@@ -64,14 +64,14 @@ public class RedisConfig {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
+        // serialize key-value of published message stream
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper));
         return template;
     }
 
-
     /**
-     * String Redis Template - using Jedis Connection Factory
+     * String Redis Template (raw template with only string) - using Jedis Connection Factory
      * @param jedisConnectionFactory: Jedis connection factory entry
      * @return template
      */
@@ -88,7 +88,7 @@ public class RedisConfig {
     }
 
     /** ******************
-     * Lettuce Configuration
+     * Lettuce Configuration: configs of lettuce connection factory defined in Redis template
      *  ******************
      */
     @Bean

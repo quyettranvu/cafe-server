@@ -12,6 +12,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +32,7 @@ public class RedisConsumerStream {
 
     @PostConstruct
     public void initialize() {
+        // key: Redis stream key, HK: field(hash key) of message, HV: value(hash value) of message
         StreamOperations<String, Object, Object> streamOperations = redisTemplate.opsForStream();
 
         try {
@@ -38,18 +41,24 @@ public class RedisConsumerStream {
             log.error(SystemConstants.CONSUMER_GROUP_EXISTED);
         }
 
-        // consume message on background thread
+        // consume a message on background thread
         new Thread(this::consumeMessages).start();
     }
 
     public void consumeMessages() {
+        // the message is returned to Record when passed simply from publisher
         StreamOperations<String, Object, Object> streamOperations = redisTemplate.opsForStream();
 
-        while(true) {
+        @SuppressWarnings("unchecked")
+        StreamOffset<String>[] offsets = new StreamOffset[] {
+                StreamOffset.create(streamName, ReadOffset.lastConsumed())
+        };
+
+        while (!Thread.currentThread().isInterrupted()) {
             List<MapRecord<String, Object, Object>> messages = streamOperations.read(
                     Consumer.from(RedisConstants.CONSUMER_GROUP, RedisConstants.CONSUMER_NAME),
-                    StreamReadOptions.empty().count(10), // number of messages returned per stream : 10
-                    StreamOffset.create(streamName, ReadOffset.lastConsumed())
+                    StreamReadOptions.empty().count(10).block(Duration.ofMillis(5000)), // number of messages returned per stream: 10, max wait for new message: 5 s
+                    offsets
             );
 
             if (messages != null && !messages.isEmpty()) {
@@ -65,12 +74,6 @@ public class RedisConsumerStream {
                     // the server will add messages to PEL, mark as acknowledged -> consumed
                     streamOperations.acknowledge(streamName, RedisConstants.CONSUMER_GROUP, message.getId());
                 }
-            }
-
-            try {
-                Thread.sleep(100); //avoid busy looping by pausing 100ms in continuous loop
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
             }
         }
     }
