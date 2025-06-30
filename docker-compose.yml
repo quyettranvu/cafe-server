@@ -4,9 +4,10 @@ services:
     container_name: redis_cafequyet
     ports:
       - "6379:6379"
-    environment:
-      - REDIS_PASSWORD=13112000Nhatrang
-    command: ["redis-server", "--requirepass", "13112000Nhatrang", "--databases", "16"]
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - redis_data:/data
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
 
   mysql:
     image: mysql:8
@@ -45,3 +46,4 @@ services:
 
 volumes:
   mysql_data:
+  redis_data:

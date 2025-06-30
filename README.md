@@ -124,9 +124,14 @@
    - Query theo filter, matchers: https://docs.spring.io/spring-data/redis/reference/redis/redis-repositories/query-by-example.html
    - Class-based Projections (DTOs): hướng thiết kế truy vấn đối tượng trả về linh hoạt
    - phát sinh các sự kiện nghiệp vụ (domain events) một cách rõ ràng và tự động khi có thay đổi dữ liệu, mà không cần viết thủ công ở Service hay Listener. (lưu ý là thao tác với entity hoặc save hoặc delete thôi), sử dụng @DomainEvents (chẳng hạn để phát đi thông báo được publish sau khi đã lưu thành công). Ngoài ra có @AfterDomainEventPublication
+   
    Về Redis Cluster:
    - cơ chế cho phép phân tán dữ liệu Redis trên nhiều node (máy chủ). Mỗi cluster sẽ có các master nodes quản và mỗi có >=1 replicas
    - khi cần mở rộng chỉ cần thêm node, Redis cluster sẽ tự cân bằng tải lại
+
+   Về Redis Persistence:
+   - Tham khảo thêm: https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/
+   - save 300 10 # Sau 300 giây nếu có ít nhất 10 thay đổi (example of a line setting in redis.conf)
 
    Các Keywords/Kiểu Collections Types khi làm việc với Spring Data Redis: https://docs.spring.io/spring-data/redis/reference/repositories/query-keywords-reference.html, https://docs.spring.io/spring-data/redis/reference/repositories/query-return-types-reference.html
    - Thuật ngữ (Glossary): https://docs.spring.io/spring-batch/reference/glossary.html

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -105,5 +106,19 @@ public class RedisService {
 
     private long countDistinctEvents() {
         return redisTemplate.opsForHyperLogLog().size("events");
+    }
+
+
+    // Trigger Redis Snapshot in background (non-blocking)
+    public void triggerRedisSnapshot() {
+        assert redisTemplate.getConnectionFactory() != null;
+        redisTemplate.getConnectionFactory().getConnection().serverCommands().bgSave();
+    }
+
+    @SuppressWarnings("deprecation")
+    public String checkSnapshotStatus() {
+        assert redisTemplate.getConnectionFactory() != null;
+        Properties info = redisTemplate.getConnectionFactory().getConnection().info("persistence");
+        return info.getProperty("rdb_last_bgsave_status"); // ok or error -> COMMAND LASTSAVE
     }
 }
